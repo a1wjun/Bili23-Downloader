@@ -3,8 +3,8 @@ name: Publish release
 on:
   workflow_dispatch:
   push:
-    # branches:
-    #   - dev
+    branches:
+      - dev
     tags:
       - "v*"
 
@@ -170,14 +170,10 @@ jobs:
           - arch: amd64
             os: ubuntu-latest
             arch_suffix: x86_64
-            chroot_distro: focal
-            source_url: http://archive.ubuntu.com/ubuntu/
 
           - arch: arm64
             os: ubuntu-24.04-arm
             arch_suffix: aarch64
-            chroot_distro: noble
-            source_url: http://ports.ubuntu.com/ubuntu-ports/
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -185,10 +181,13 @@ jobs:
 
       - name: Prepare Ubuntu chroot environment
         run: |
+          export chroot_distro=${{ matrix.arch == 'amd64' && 'focal' || 'noble' }}
+          export source_url=${{ matrix.arch == 'amd64' && 'http://archive.ubuntu.com/ubuntu/' || 'http://ports.ubuntu.com/ubuntu-ports/' }}
+
           sudo apt update
           sudo apt install -y debootstrap
 
-          sudo debootstrap --arch=${{ matrix.arch }} ${{ matrix.chroot_distro }} ~/ubuntu-rootfs ${{ matrix.source_url }}
+          sudo debootstrap --arch=${{ matrix.arch }} ${chroot_distro} ~/ubuntu-rootfs ${source_url}
 
           sudo mkdir -p ~/ubuntu-rootfs/workspace
 
@@ -239,7 +238,6 @@ jobs:
 
           chmod +x Bili23-Downloader/bili23-downloader
           chmod +x Bili23-Downloader/bundle/ffmpeg
-          chmod +x Bili23-Downloader/runtime/python3.12
 
           mkdir -p Bili23-Downloader/script
 
@@ -266,6 +264,8 @@ jobs:
           cp -r Bili23-Downloader buildroot/opt/
           cp src/res/icon/app.svg buildroot/usr/share/icons/hicolor/scalable/apps/bili23-downloader.svg
 
+          export GLIBC_VERSION=${{ matrix.arch == 'amd64' && '2.31' || '2.39' }}
+
           # control 文件
           echo "Package: bili23-downloader" > buildroot/DEBIAN/control
           echo "Version: ${{ env.VERSION_NAME }}" >> buildroot/DEBIAN/control
@@ -274,7 +274,7 @@ jobs:
           echo "Priority: optional" >> buildroot/DEBIAN/control
           echo "Maintainer: Scott Sloan <world1019@sina.com>" >> buildroot/DEBIAN/control
           echo "Description: A cross-platform video downloader for Bilibili" >> buildroot/DEBIAN/control
-          echo "Depends: libc6 (>= 2.28), libxcb-cursor0" >> buildroot/DEBIAN/control
+          echo "Depends: libc6 (>= ${GLIBC_VERSION}), libxcb-cursor0" >> buildroot/DEBIAN/control
           echo "Homepage: https://bili23.scott-sloan.cn" >> buildroot/DEBIAN/control
           echo "License: GPL-3.0" >> buildroot/DEBIAN/control
           echo "Installed-Size: $(du -s Bili23-Downloader | cut -f1)" >> buildroot/DEBIAN/control
@@ -367,7 +367,6 @@ jobs:
 
           chmod +x Bili23-Downloader/bili23-downloader
           chmod +x Bili23-Downloader/bundle/ffmpeg
-          chmod +x Bili23-Downloader/runtime/python3.12
 
           mkdir -p Bili23-Downloader/script
 
