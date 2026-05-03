@@ -3,8 +3,8 @@ name: Publish release
 on:
   workflow_dispatch:
   push:
-    branches:
-      - dev
+    # branches:
+    #   - dev
     tags:
       - "v*"
 
@@ -74,7 +74,7 @@ jobs:
       - name: Prepare Windows 10/11 runtime
         run: |
           # 下载 Python 静态运行时环境
-          Invoke-WebRequest -Uri "https://github.com/ScottSloan/Python-Static/releases/download/v0.0.5/windows_x64_runtime.zip" -OutFile windows_x64_runtime.zip
+          Invoke-WebRequest -Uri "https://github.com/ScottSloan/Python-Static/releases/download/v0.0.6/windows_x64_runtime.zip" -OutFile windows_x64_runtime.zip
           
           Expand-Archive windows_x64_runtime.zip -DestinationPath Bili23-Downloader
 
@@ -121,7 +121,7 @@ jobs:
       - name: Prepare Windows 7 runtime
         run: |
           # 下载 Python 静态运行时环境
-          Invoke-WebRequest -Uri "https://github.com/ScottSloan/Python-Static/releases/download/v0.0.5/windows_x64_runtime_for_win7.zip" -OutFile windows_x64_runtime_for_win7.zip
+          Invoke-WebRequest -Uri "https://github.com/ScottSloan/Python-Static/releases/download/v0.0.6/windows_x64_runtime_for_win7.zip" -OutFile windows_x64_runtime_for_win7.zip
           
           Expand-Archive windows_x64_runtime_for_win7.zip -DestinationPath Bili23-Downloader
 
@@ -233,7 +233,7 @@ jobs:
       - name: Prepare Linux runtime
         run: |
           # 下载 Python 静态运行时环境
-          wget https://github.com/ScottSloan/Python-Static/releases/download/v0.0.5/linux_${{ matrix.arch }}_runtime.zip
+          wget https://github.com/ScottSloan/Python-Static/releases/download/v0.0.6/linux_${{ matrix.arch }}_runtime.zip
 
           unzip linux_${{ matrix.arch }}_runtime.zip -d Bili23-Downloader
 
@@ -361,7 +361,7 @@ jobs:
       - name: Prepare macOS runtime
         run: |
           # 下载 Python 静态运行时环境
-          wget https://github.com/ScottSloan/Python-Static/releases/download/v0.0.5/macos_${{ matrix.arch }}_runtime.zip
+          wget https://github.com/ScottSloan/Python-Static/releases/download/v0.0.6/macos_${{ matrix.arch }}_runtime.zip
 
           unzip macos_${{ matrix.arch }}_runtime.zip -d Bili23-Downloader
 

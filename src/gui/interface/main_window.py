@@ -17,6 +17,7 @@ from gui.dialog import LoginDialog, UpdateDialog
 from util.common import signal_bus, config, Directory, ExtendedFluentIcon
 from util.common.enum import ToastNotificationCategory, WhenClose
 from util.auth import user_manager
+from util.thread import AsyncTask
 from util.misc import Updater
 
 class MainWindow(MSFluentWindow):
@@ -141,6 +142,11 @@ class MainWindow(MSFluentWindow):
             e.ignore()
             return
         
+        # 隐藏窗口，给用户反馈正在关闭的状态，避免长时间无响应的感觉
+        self.hide()
+        
+        AsyncTask.safe_quit()
+
         self.theme_listener.terminate()
         self.theme_listener.deleteLater()
 
