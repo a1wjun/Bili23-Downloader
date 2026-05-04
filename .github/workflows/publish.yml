@@ -18,16 +18,16 @@ jobs:
       - name: Set version
         id: set-version
         run: |
-          echo "VERSION=$(echo ${GITHUB_REF#refs/tags/v} | sed 's/-rc.*//')" >> $GITHUB_OUTPUT
-          echo "VERSION_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          if echo "${GITHUB_REF#refs/tags/v}" | grep -q -- '-rc'; then
-            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
-          else
-            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
-          fi
+          # echo "VERSION=$(echo ${GITHUB_REF#refs/tags/v} | sed 's/-rc.*//')" >> $GITHUB_OUTPUT
+          # echo "VERSION_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          # if echo "${GITHUB_REF#refs/tags/v}" | grep -q -- '-rc'; then
+          #   echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
+          # else
+          #   echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
+          # fi
 
-          # echo "VERSION=2.00.2" >> $GITHUB_OUTPUT
-          # echo "VERSION_NAME=2.00.2" >> $GITHUB_OUTPUT
+          echo "VERSION=2.00.3" >> $GITHUB_OUTPUT
+          echo "VERSION_NAME=2.00.3" >> $GITHUB_OUTPUT
 
   windows-build:
     needs: get-version
@@ -517,17 +517,17 @@ jobs:
           echo "> Windows 7 用户请下载 win7 专用版（带有 for_win7 字样）" >> CHANGELOG.md
           echo "> 其他问题请参考 [常见问题(FAQ)](https://bili23.scott-sloan.cn/doc/faq.html)" >> CHANGELOG.md
 
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          name: v${{ env.VERSION_NAME }}
-          body_path: CHANGELOG.md
-          make_latest: ${{ env.IS_PRERELEASE != 'true' }}
-          draft: false
-          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
-          generate_release_notes: false
-          discussion_category_name: announcements
-          files: |
-            release-artifacts/*
+      # - name: Upload to Release
+      #   uses: softprops/action-gh-release@v2
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     name: v${{ env.VERSION_NAME }}
+      #     body_path: CHANGELOG.md
+      #     make_latest: ${{ env.IS_PRERELEASE != 'true' }}
+      #     draft: false
+      #     prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+      #     generate_release_notes: false
+      #     discussion_category_name: announcements
+      #     files: |
+      #       release-artifacts/*

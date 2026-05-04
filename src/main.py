@@ -1,7 +1,6 @@
 from PySide6.QtCore import QStandardPaths
 
 from logging.handlers import TimedRotatingFileHandler
-from multiprocessing import freeze_support
 from pathlib import Path
 import logging
 import sys
@@ -54,7 +53,7 @@ qInstallMessageHandler(qt_message_handler)
 
 # --------- Imports ---------
 
-from PySide6.QtCore import Qt, QLocale, QTranslator, QByteArray
+from PySide6.QtCore import Qt, QLocale, QTranslator, QByteArray, QLockFile
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFont
@@ -67,48 +66,90 @@ import res.resources_rc
 
 from gui.interface import MainWindow
 
+SERVER_NAME = "Bili23DownloaderInstance"
+INSTANCE_LOCK_NAME = "instance.lock"
+INSTANCE_LOCK_TIMEOUT_MS = 10_000
+ACTIVATION_TIMEOUT_MS = 500
+HANDSHAKE_TIMEOUT_MS = 5000
+LOCAL_SERVER_RETRY_COUNT = 2
+
 class Application(QApplication):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.window: MainWindow = None
 
-        self.init_socket()
+        self.init_single_instance()
 
-    def init_socket(self):
+    def init_single_instance(self):
         logger = logging.getLogger(__name__)
-        server_name = "Bili23DownloaderInstance"
-        handshake_timeout_ms = 5000
+        lock_path = Path(appdata_path) / "Bili23 Downloader" / "locks" / INSTANCE_LOCK_NAME
 
-        # 尝试连接到已存在的实例，如果能完成握手则退出当前实例
-        self.socket = QLocalSocket()
-        self.socket.connectToServer(server_name)
+        lock_path.parent.mkdir(parents = True, exist_ok = True)
 
-        if self.socket.waitForConnected(500):
-            # 已有实例存在，先做一次握手，避免把卡死/未启动完成的实例误判成可用实例
-            self.socket.write(QByteArray(b"activate"))
-            self.socket.flush()
-
-            if self.socket.waitForBytesWritten(500) and self.socket.waitForReadyRead(handshake_timeout_ms):
-                response = self.socket.readAll().data()
-
-                if response in (b"ok", b"pong", b"activate"):
-                    logger.warning("另一个实例已在运行，已退出当前实例")
-                    sys.exit(0)
-
-            logger.warning("已有实例未能及时响应，继续启动当前实例")
-            self.socket.disconnectFromServer()
-
-        # 清理崩溃或异常退出后残留的本地服务名，避免偶发启动失败
-        QLocalServer.removeServer(server_name)
-
+        self.instance_lock = QLockFile(str(lock_path))
+        self.instance_lock.setStaleLockTime(INSTANCE_LOCK_TIMEOUT_MS)
         self.server = QLocalServer()
 
-        if not self.server.listen(server_name):
-            logger.error("无法启动本地服务器: %s", self.server.errorString())
+        # 优先抢占实例锁，确保同一时间只有一个主进程。
+        if self.instance_lock.tryLock(0):
+            if not self.start_local_server(logger):
+                self.instance_lock.unlock()
+                sys.exit(1)
+
+            self.server.newConnection.connect(self.on_new_connection)
+            return
+
+        # 锁被占用时，尝试唤醒已有实例。
+        if self.activate_existing_instance(logger):
+            sys.exit(0)
+
+        # 如果连不上现有实例，通常意味着锁文件已过期但仍残留，清理后再尝试抢锁。
+        self.instance_lock.removeStaleLockFile()
+
+        if not self.instance_lock.tryLock(0):
+            logger.error("无法获取实例锁，也无法确认可用的现有实例")
+            sys.exit(1)
+
+        if not self.start_local_server(logger):
+            self.instance_lock.unlock()
             sys.exit(1)
 
         self.server.newConnection.connect(self.on_new_connection)
+
+    def start_local_server(self, logger):
+        for attempt in range(LOCAL_SERVER_RETRY_COUNT):
+            if self.server.listen(SERVER_NAME):
+                return True
+
+            if attempt == 0:
+                # 监听名残留时，清理后再重试一次。
+                QLocalServer.removeServer(SERVER_NAME)
+
+        logger.error("无法启动本地服务器: %s", self.server.errorString())
+        return False
+
+    def activate_existing_instance(self, logger):
+        self.socket = QLocalSocket()
+        self.socket.connectToServer(SERVER_NAME)
+
+        if not self.socket.waitForConnected(ACTIVATION_TIMEOUT_MS):
+            return False
+
+        # 已有实例存在，先做一次握手，避免把卡死/未启动完成的实例误判成可用实例
+        self.socket.write(QByteArray(b"activate"))
+        self.socket.flush()
+
+        if self.socket.waitForBytesWritten(ACTIVATION_TIMEOUT_MS) and self.socket.waitForReadyRead(HANDSHAKE_TIMEOUT_MS):
+            response = self.socket.readAll().data()
+
+            if response in (b"ok", b"pong", b"activate"):
+                logger.warning("另一个实例已在运行，已退出当前实例")
+                return True
+
+        logger.warning("已有实例未能及时响应，继续启动当前实例")
+        self.socket.disconnectFromServer()
+        return False
 
     def on_new_connection(self):
         socket = self.server.nextPendingConnection()
@@ -150,7 +191,7 @@ class Application(QApplication):
         self.installTranslator(self.fluent_translator)
         self.installTranslator(self.bili23_translator)
 
-def main():
+def _main():
     scaling_value = config.get(config.display_scaling).value
 
     if scaling_value != "Auto":
@@ -169,6 +210,4 @@ def main():
     app.exec()
 
 if __name__ == "__main__":
-    freeze_support()
-    
-    main()
+    _main()
