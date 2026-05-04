@@ -252,8 +252,13 @@ class ParseInterface(ParseBase):
         # 只有在获取媒体信息成功时才允许下载
         #self.download_btn.setIndeterminateState(True)
 
+        if not self.check_preview_info():
+            return
+
         if config.get(config.show_download_options_dialog):
-            if not self.on_download_options():
+            dialog = DownloadOptionsDialog(self.main_window)
+            
+            if not dialog.exec():
                 return
 
         checked_episodes_list = self.parse_list.get_checked_items(to_dict = True, mark_as_downloaded = True)
@@ -270,8 +275,7 @@ class ParseInterface(ParseBase):
             return
 
         dialog = DownloadOptionsDialog(self.main_window)
-        
-        return dialog.exec()
+        dialog.exec()
 
     def on_show_more(self):
         menu = RoundMenu(parent = self)

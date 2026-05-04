@@ -4,7 +4,6 @@ class QueryWorker:
     def __init__(self, media_info: dict):
         self.media_info = media_info
 
-        self.file_size = 0
         self.break_flag = False
 
     def query_dash_url(self):
@@ -26,6 +25,8 @@ class QueryWorker:
         return url_list
 
     def get_file_size(self, download_urls: list):
+        _file_size = 0
+        resolved_url = ""
         download_urls = CDN.get_url_list(download_urls)
 
         for url in download_urls:                
@@ -50,32 +51,33 @@ class QueryWorker:
                 # 无法获取有效的文件大小
                 continue
 
-            self.file_size = int(content_length)
+            _file_size = int(content_length)
 
-            if self.file_size <= 10240:
+            if _file_size <= 10240:
                 # 如果文件极小（例如某些 CDN 拦截时返回的 1KB 左右错误文本），视为无效链接跳过
                 continue
 
+            resolved_url = url
             break
         
-        if self.file_size == 0:
+        if _file_size == 0:
             raise Exception("无法获取有效的下载链接")
-        
+
         return {
-            "url": url,
-            "file_size": self.file_size
+            "url": resolved_url,
+            "file_size": _file_size
         }
 
     def get_download_urls(self, media_info: dict):
         download_urls = []
 
-        for key in ["baseUrl", "base_url", "backupUrl", "backup_url", "url", "backup_url"]:
-            object = media_info.get(key)
+        for key in ["baseUrl", "base_url", "backupUrl", "backup_url", "url"]:
+            value = media_info.get(key)
 
-            if isinstance(object, list):
-                download_urls.extend(object)
+            if isinstance(value, list):
+                download_urls.extend(value)
 
-            elif isinstance(object, str):
-                download_urls.append(object)
+            elif isinstance(value, str):
+                download_urls.append(value)
 
         return download_urls

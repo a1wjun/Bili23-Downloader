@@ -117,6 +117,11 @@ class SyncNetWorkRequest:
         if self.content_type:
             client.headers["Content-Type"] = self.content_type
 
+        else:
+            # 如果没有指定 content_type，则移除可能存在的 Content-Type 头部，避免影响某些请求
+            if "Content-Type" in client.headers:
+                client.headers.pop("Content-Type", None)
+
 class NetworkRequestWorker(SyncNetWorkRequest, QObject):
     success = Signal(object)
     error = Signal(str)

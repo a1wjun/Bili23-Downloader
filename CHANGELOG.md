@@ -19,7 +19,7 @@
 #### 注意
 安装前请先移除旧版本，请勿覆盖安装。
 另外，新版本调整了 Linux/ macOS 发行版的系统需求，请确保系统满足以下要求：
-- Linux amd64: glibc 2.31+ （Ubuntu 20.04 / Debian 11 / Fedora 32 / RHEL 9 或更高版本）
-- Linux arm64: glibc 2.39+ (Ubuntu 24.04 / Debian 13 / Fedora 40 / RHEL 10 或更高版本)
+- Linux amd64: Ubuntu 20.04 / Debian 11 / Fedora 32 / RHEL 9 及以上版本 (glibc 2.31+)
+- Linux arm64: Ubuntu 24.04 / Debian 13 / Fedora 40 / RHEL 10 及以上版本 (glibc 2.39+)
 - macOS x86_64: macOS 12+
 - macOS aarch64: macOS 12+

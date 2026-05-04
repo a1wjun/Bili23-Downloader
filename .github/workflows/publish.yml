@@ -3,8 +3,8 @@ name: Publish release
 on:
   workflow_dispatch:
   push:
-    branches:
-      - dev
+    # branches:
+    #   - dev
     tags:
       - "v*"
 
@@ -267,17 +267,33 @@ jobs:
           export GLIBC_VERSION=${{ matrix.arch == 'amd64' && '2.31' || '2.39' }}
 
           # control 文件
-          echo "Package: bili23-downloader" > buildroot/DEBIAN/control
-          echo "Version: ${{ env.VERSION_NAME }}" >> buildroot/DEBIAN/control
-          echo "Architecture: ${{ matrix.arch }}" >> buildroot/DEBIAN/control
-          echo "Section: utils" >> buildroot/DEBIAN/control
-          echo "Priority: optional" >> buildroot/DEBIAN/control
-          echo "Maintainer: Scott Sloan <world1019@sina.com>" >> buildroot/DEBIAN/control
-          echo "Description: A cross-platform video downloader for Bilibili" >> buildroot/DEBIAN/control
-          echo "Depends: libc6 (>= ${GLIBC_VERSION}), libxcb-cursor0" >> buildroot/DEBIAN/control
-          echo "Homepage: https://bili23.scott-sloan.cn" >> buildroot/DEBIAN/control
-          echo "License: GPL-3.0" >> buildroot/DEBIAN/control
-          echo "Installed-Size: $(du -s Bili23-Downloader | cut -f1)" >> buildroot/DEBIAN/control
+          cat << EOF > buildroot/DEBIAN/control
+          Package: bili23-downloader
+          Version: ${{ env.VERSION_NAME }}
+          Architecture: ${{ matrix.arch }}
+          Section: utils
+          Priority: optional
+          Maintainer: Scott Sloan <world1019@sina.com>
+          Description: A cross-platform video downloader for Bilibili
+          Depends: libc6 (>= ${GLIBC_VERSION}), libxcb-cursor0
+          Homepage: https://bili23.scott-sloan.cn
+          License: GPL-3.0
+          Installed-Size: $(du -s Bili23-Downloader | cut -f1)
+          EOF
+
+          # preinst 文件
+          cat << 'EOF' > buildroot/DEBIAN/preinst
+          #!/bin/bash
+          # 清空旧版本可能残留的文件
+          rm -rf /opt/Bili23-Downloader
+          EOF
+
+          # postrm 文件
+          cat << 'EOF' > buildroot/DEBIAN/postrm
+          #!/bin/bash
+          # 卸载后删除残留文件
+          rm -rf /opt/Bili23-Downloader
+          EOF
 
           # desktop 文件
           cat << 'EOF' > buildroot/usr/share/applications/bili23-downloader.desktop
@@ -299,6 +315,8 @@ jobs:
           EOF
 
           chmod +x buildroot/usr/local/bin/bili23-downloader
+          chmod +x buildroot/DEBIAN/preinst
+          chmod +x buildroot/DEBIAN/postrm
 
           dpkg-deb --build buildroot Bili23-Downloader_${{ env.VERSION_NAME }}_linux_${{ matrix.arch }}.deb
 
@@ -409,7 +427,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>APPL</string>
             <key>LSMinimumSystemVersion</key>
-            <string>13.0</string>
+            <string>12.0</string>
             <key>NSHighResolutionCapable</key>
             <true/>
             <key>LSUIElement</key>

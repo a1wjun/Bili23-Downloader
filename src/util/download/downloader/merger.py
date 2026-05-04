@@ -110,7 +110,7 @@ class Merger(QObject):
 
             elif has_audio and not has_video:
                 safe_rename(cwd, self._output_audio_file, self.final_audio_file_name)
-                self.add_file(self._output_audio_file, clear = True)
+                self.add_file(self.final_audio_file_name, clear = True)
 
             self.mark_as_completed()
 
@@ -191,9 +191,9 @@ class Merger(QObject):
         if error_message is None:
             error_message = str(error)
 
-        retry_message = Translator.TIP_MESSAGES("RETRY_PROMPT")
+        long_message = f"{error_message}\n\n\n{stderr}"
 
-        self.set_error_message(Translator.ERROR_MESSAGES("DOWNLOAD_FAILED"), f"{error_message}\n\n{retry_message}\n\n{stderr}")
+        self.set_error_message(Translator.ERROR_MESSAGES("DOWNLOAD_FAILED"), long_message)
 
         signal_bus.download.auto_manage_concurrent_downloads.emit()
 
